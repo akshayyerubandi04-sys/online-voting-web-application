@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voter Registry & Candidacy Portal</title>
+  <meta name="description" content="Manage your digital voter registry and candidate profile.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Dashboard Header -->
+  <header class="main-header">
+    <div class="logo-container">
+      <div class="logo-icon">🗳️</div>
+      <div class="logo-text">VOTE SECURE</div>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle-btn" id="themeToggleBtn">
+        <span id="themeBtnText">☀️ Light Mode</span>
+      </button>
+      <button class="logout-btn" id="logoutBtn" aria-label="Sign Out of Session">
+        <span>Logout 🚪</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Dashboard Content -->
+  <main class="dashboard-container">
+    
+    <!-- Welcome Panel -->
+    <section class="welcome-section">
+      <div>
+        <h1 class="welcome-title">Voting Portal</h1>
+        <p style="color: var(--text-secondary);">Manage your national voter status and candidate representation settings.</p>
+      </div>
+      <div>
+        <div class="id-badge">
+          <span class="id-badge-dot"></span>
+          <span id="userMaskedId">ID: XXXX-XXXX-XXXX</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Options Pathways -->
+    <section class="dashboard-grid">
+
+      <!-- Pathway A: Register as a Voter -->
+      <article class="option-card voter-card" id="voterCard">
+        <div class="option-header">
+          <div class="option-icon">📋</div>
+          <span class="badge-status not-registered" id="voterStatusBadge">Not Registered</span>
+        </div>
+        <h2 class="option-title">Register as a Voter</h2>
+        <p class="option-desc">
+          Submit your official details to clear eligibility checks. Once approved, your profile is appended to the active cryptographic voter registry, enabling your ballot access for elections.
+        </p>
+        
+        <!-- Registration Actions -->
+        <button class="btn-secondary" id="btnOpenVoterModal">Verify Eligibility & Register</button>
+
+        <!-- Registered Info details (dynamically shown) -->
+        <div class="details-block" id="voterDetailsBlock" style="display: none;">
+          <div class="details-row">
+            <span class="details-label">Full Name:</span>
+            <span class="details-value" id="voterValName">-</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">DOB:</span>
+            <span class="details-value" id="voterValDob">-</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">Constituency:</span>
+            <span class="details-value" id="voterValConstituency">-</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">Verified At:</span>
+            <span class="details-value" id="voterValTime">-</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Pathway B: Register as a Candidate -->
+      <article class="option-card candidate-card" id="candidateCard">
+        <div class="option-header">
+          <div class="option-icon">📣</div>
+          <span class="badge-status not-registered" id="candidateStatusBadge">Disabled</span>
+        </div>
+        <h2 class="option-title">File Candidacy Application</h2>
+        <p class="option-desc" id="candidateCardDesc">
+          Declare your candidacy for legislative office. Specify your party representation, input your election manifesto details, and upload documents.
+        </p>
+
+        <!-- Candidacy Actions -->
+        <button class="btn-secondary" id="btnOpenCandidateModal" disabled>File Candidacy Form</button>
+
+        <!-- Candidate Info details (dynamically shown) -->
+        <div class="details-block" id="candidateDetailsBlock" style="display: none;">
+          <div class="details-row">
+            <span class="details-label">Candidate Name:</span>
+            <span class="details-value" id="candidateValName">-</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">Party Affiliation:</span>
+            <span class="details-value" id="candidateValParty">-</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">Constituency:</span>
+            <span class="details-value" id="candidateValConstituency">-</span>
+          </div>
+          <div class="details-row" style="flex-direction: column; gap: 0.25rem;">
+            <span class="details-label">Election Manifesto Summary:</span>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); margin-top: 0.25rem;" id="candidateValManifesto">-</p>
+          </div>
+        </div>
+      </article>
+
+    </section>
+
+  </main>
+
+  <!-- ==========================================================================
+       MODALS
+       ========================================================================== -->
+
+  <!-- Modal A: Voter Registration Form -->
+  <div class="modal-overlay" id="voterModal" role="dialog" aria-modal="true" aria-labelledby="voterModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="voterModalTitle">Voter Eligibility Registry</h3>
+        <button class="modal-close-btn" id="voterCloseBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="status-banner error" id="voterModalStatusBanner"></div>
+
+        <form id="voterForm">
+          <div class="form-group">
+            <label class="form-label" for="voterFullName">Legal Full Name</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" id="voterFullName" class="form-input" placeholder="John Doe" required style="padding-left: 2.75rem;">
+            </div>
+          </div>
+
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="voterDob">Date of Birth</label>
+              <div class="input-wrapper">
+                <span class="input-icon">📅</span>
+                <input type="date" id="voterDob" class="form-input" required style="padding-left: 2.75rem;">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="voterConstituency">Electoral Constituency</label>
+              <div class="input-wrapper">
+                <span class="input-icon">📍</span>
+                <input type="text" id="voterConstituency" class="form-input" placeholder="District 12" required style="padding-left: 2.75rem;">
+              </div>
+            </div>
+          </div>
+          
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+            ⚠️ Information submitted here must match your government records. Eligibility check restricts registration to age 18 and older.
+          </p>
+          
+          <button type="submit" class="btn-primary">Submit Registry Application</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal B: Candidate Application Form -->
+  <div class="modal-overlay" id="candidateModal" role="dialog" aria-modal="true" aria-labelledby="candidateModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="candidateModalTitle">Declare Candidacy</h3>
+        <button class="modal-close-btn" id="candidateCloseBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="status-banner error" id="candidateModalStatusBanner"></div>
+
+        <form id="candidateForm">
+          <div class="form-group">
+            <label class="form-label" for="candidateName">Ballot Display Name</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" id="candidateName" class="form-input" placeholder="Representative Name" required style="padding-left: 2.75rem;">
+            </div>
+          </div>
+
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="partyAffiliation">Party Affiliation</label>
+              <div class="input-wrapper">
+                <span class="input-icon">🏛️</span>
+                <input type="text" id="partyAffiliation" class="form-input" placeholder="Independent / Democratic" required style="padding-left: 2.75rem;">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="candidateConstituency">Constituency</label>
+              <div class="input-wrapper">
+                <span class="input-icon">📍</span>
+                <input type="text" id="candidateConstituency" class="form-input" readonly style="padding-left: 2.75rem;">
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Matches your active voter constituency.</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="candidateManifesto">Campaign Manifesto</label>
+            <textarea id="candidateManifesto" class="form-input" placeholder="Describe your key campaign policies and vision..." required style="height: 100px; resize: vertical; padding-left: 1rem;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="candidateDocs">Verification Documentation</label>
+            <div class="input-wrapper">
+              <span class="input-icon">📄</span>
+              <input type="file" id="candidateDocs" class="form-input" style="padding-left: 2.75rem;">
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Upload campaign petition or identity credentials (PDF/Image formats).</span>
+          </div>
+
+          <button type="submit" class="btn-primary">File Candidacy Declaration</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modern Secure Footer -->
+  <footer class="main-footer">
+    <p>© 2026 Vote Secure. Cryptographically hardened user records. Standard data protocols active.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

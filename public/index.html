@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Online Voting Portal - Onboarding</title>
+  <meta name="description" content="Cast your vote securely using cryptographically verified digital identity authentication.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Premium Header -->
+  <header class="main-header">
+    <div class="logo-container">
+      <div class="logo-icon">🗳️</div>
+      <div class="logo-text">VOTE SECURE</div>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle light/dark theme">
+        <span id="themeBtnText">☀️ Light Mode</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Auth Panel Wrapper -->
+  <main class="auth-wrapper">
+    <section class="auth-container">
+      
+      <div class="auth-header">
+        <h1 class="auth-title" id="authFormTitle">Welcome Portal</h1>
+        <p class="auth-subtitle" id="authFormSubtitle">Verify your identity to enter the secure portal.</p>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabSignIn">Sign In</button>
+        <button class="auth-tab" id="tabSignUp">Sign Up</button>
+      </div>
+
+      <!-- Dynamic Status/Error Banner -->
+      <div class="status-banner" id="statusBanner" role="alert"></div>
+
+      <!-- ONBOARDING FORM -->
+      <form id="authForm" novalidate>
+        
+        <!-- Identity Field -->
+        <div class="form-group">
+          <label class="form-label" for="identityInput">Aadhaar / Identity Number</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🪪</span>
+            <input 
+              type="text" 
+              id="identityInput" 
+              class="form-input" 
+              placeholder="0000 0000 0000" 
+              maxlength="14" 
+              required 
+              autocomplete="username"
+            >
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;" id="identityHint">
+            Enter your 12-digit National Identity Card number
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label class="form-label" for="passwordInput">Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input 
+              type="password" 
+              id="passwordInput" 
+              class="form-input" 
+              placeholder="••••••••" 
+              required 
+              autocomplete="current-password"
+            >
+          </div>
+          
+          <!-- Dynamic Password Strength Checklist (Only shown during Sign Up) -->
+          <div class="password-criteria" id="passwordCriteria" style="display: none;">
+            <p>Password requirements:</p>
+            <div class="criterion invalid" id="ruleLength">Minimum 8 characters</div>
+            <div class="criterion invalid" id="ruleUpper">At least one uppercase letter</div>
+            <div class="criterion invalid" id="ruleLower">At least one lowercase letter</div>
+            <div class="criterion invalid" id="ruleNumber">At least one number</div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-primary" id="btnSubmit">
+          <span id="submitBtnText">Access Dashboard</span> ➔
+        </button>
+
+      </form>
+
+    </section>
+  </main>
+
+  <!-- Modern Secure Footer -->
+  <footer class="main-footer">
+    <p>© 2026 Vote Secure. Cryptographically hardened user records. Standard data protocols active.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
