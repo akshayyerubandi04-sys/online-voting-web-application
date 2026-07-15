@@ -36,14 +36,20 @@ const dbHelper = {
         const sqlLower = sql.toLowerCase();
 
         if (sqlLower.includes('insert into users')) {
-          // INSERT INTO users (identity_hash, identity_masked, password_hash) VALUES (?, ?, ?)
+          // INSERT INTO users (identity_hash, identity_masked, password_hash, email) VALUES (?, ?, ?, ?)
           const identity_hash = params[0];
           const identity_masked = params[1];
           const password_hash = params[2];
+          const email = params[3] ? params[3].toLowerCase().trim() : '';
 
           // Enforce UNIQUE constraint on identity_hash
           if (data.users.some(u => u.identity_hash === identity_hash)) {
             return reject(new Error('UNIQUE constraint failed: users.identity_hash'));
+          }
+
+          // Enforce UNIQUE constraint on email
+          if (email && data.users.some(u => u.email === email)) {
+            return reject(new Error('UNIQUE constraint failed: users.email'));
           }
 
           const newUser = {
@@ -51,6 +57,7 @@ const dbHelper = {
             identity_hash,
             identity_masked,
             password_hash,
+            email,
             created_at: new Date().toISOString()
           };
           data.users.push(newUser);
@@ -82,13 +89,17 @@ const dbHelper = {
           saveDb(data);
           resolve({ id: newVoter.id, changes: 1 });
         } else if (sqlLower.includes('insert into candidates')) {
-          // INSERT INTO candidates (user_id, candidate_name, party_affiliation, constituency, manifesto, status) VALUES (?, ?, ?, ?, ?, 'PENDING')
+          // INSERT INTO candidates (user_id, candidate_name, party_affiliation, constituency, manifesto, status, age, qualification, photo_url, role) VALUES (?, ?, ?, ?, ?, 'APPROVED', ?, ?, ?, ?)
           const user_id = params[0];
           const candidate_name = params[1];
           const party_affiliation = params[2];
           const constituency = params[3];
           const manifesto = params[4];
-          const status = 'PENDING';
+          const status = 'APPROVED';
+          const age = params[5] ? Number(params[5]) : 0;
+          const qualification = params[6] || '';
+          const photo_url = params[7] || '';
+          const role = params[8] || 'MLA';
 
           // Enforce UNIQUE constraint on user_id
           if (data.candidates.some(c => c.user_id === user_id)) {
@@ -103,11 +114,38 @@ const dbHelper = {
             constituency,
             manifesto,
             status,
+            age,
+            qualification,
+            photo_url,
+            role,
             submitted_at: new Date().toISOString()
           };
           data.candidates.push(newCandidate);
           saveDb(data);
           resolve({ id: newCandidate.id, changes: 1 });
+        } else if (sqlLower.includes('insert into votes')) {
+          // INSERT INTO votes (voter_user_id, candidate_id) VALUES (?, ?)
+          const voter_user_id = params[0];
+          const candidate_id = Number(params[1]);
+
+          if (!data.votes) {
+            data.votes = [];
+          }
+
+          // Enforce UNIQUE constraint on voter_user_id
+          if (data.votes.some(v => v.voter_user_id === voter_user_id)) {
+            return reject(new Error('UNIQUE constraint failed: votes.voter_user_id'));
+          }
+
+          const newVote = {
+            id: data.votes.length + 1,
+            voter_user_id,
+            candidate_id,
+            created_at: new Date().toISOString()
+          };
+          data.votes.push(newVote);
+          saveDb(data);
+          resolve({ id: newVote.id, changes: 1 });
         } else {
           reject(new Error(`Unsupported write statement: ${sql}`));
         }
@@ -135,7 +173,7 @@ const dbHelper = {
             const id = Number(params[0]);
             const user = data.users.find(u => u.id === id);
             if (user) {
-              resolve({ id: user.id, identity_masked: user.identity_masked });
+              resolve({ id: user.id, identity_masked: user.identity_masked, email: user.email || '' });
             } else {
               resolve(null);
             }
@@ -158,6 +196,15 @@ const dbHelper = {
           } else {
             resolve(null);
           }
+        } else if (sqlLower.includes('from votes')) {
+          if (sqlLower.includes('voter_user_id =')) {
+            const voter_user_id = Number(params[0]);
+            if (!data.votes) data.votes = [];
+            const vote = data.votes.find(v => v.voter_user_id === voter_user_id);
+            resolve(vote ? { ...vote } : null);
+          } else {
+            resolve(null);
+          }
         } else {
           resolve(null);
         }
@@ -171,8 +218,29 @@ const dbHelper = {
    * Fetch multiple rows
    */
   all(sql, params = []) {
-    return new Promise((resolve) => {
-      resolve([]);
+    return new Promise((resolve, reject) => {
+      try {
+        const data = loadDb();
+        const sqlLower = sql.toLowerCase();
+
+        if (sqlLower.includes('from candidates')) {
+          if (sqlLower.includes('constituency =')) {
+            const constituency = params[0];
+            const list = data.candidates.filter(
+              c => c.constituency.toLowerCase() === constituency.toLowerCase() && c.status === 'APPROVED'
+            );
+            resolve(list);
+          } else {
+            resolve(data.candidates);
+          }
+        } else if (sqlLower.includes('from voters')) {
+          resolve(data.voters);
+        } else {
+          resolve([]);
+        }
+      } catch (err) {
+        reject(err);
+      }
     });
   },
 

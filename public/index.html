@@ -45,22 +45,39 @@
         
         <!-- Identity Field -->
         <div class="form-group">
-          <label class="form-label" for="identityInput">Aadhaar / Identity Number</label>
+          <label class="form-label" for="identityInput">User Name</label>
           <div class="input-wrapper">
             <span class="input-icon">🪪</span>
             <input 
               type="text" 
               id="identityInput" 
               class="form-input" 
-              placeholder="0000 0000 0000" 
-              maxlength="14" 
+              placeholder="Enter your User Name" 
               required 
               autocomplete="username"
             >
           </div>
+          <div class="validation-message" id="identityValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
           <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;" id="identityHint">
-            Enter your 12-digit National Identity Card number
+            Enter your unique User Name
           </div>
+        </div>
+
+        <!-- Email Field (Only shown during Sign Up) -->
+        <div class="form-group" id="emailFormGroup" style="display: none;">
+          <label class="form-label" for="emailInput">Email Address</label>
+          <div class="input-wrapper">
+            <span class="input-icon">✉️</span>
+            <input 
+              type="email" 
+              id="emailInput" 
+              class="form-input" 
+              placeholder="you@example.com" 
+              autocomplete="email"
+              style="padding-left: 2.75rem;"
+            >
+          </div>
+          <div class="validation-message" id="emailValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
         </div>
 
         <!-- Password Field -->
@@ -75,17 +92,13 @@
               placeholder="••••••••" 
               required 
               autocomplete="current-password"
+              style="padding-right: 3rem;"
             >
+            <button type="button" class="password-toggle-btn" id="passwordToggleBtn" aria-label="Toggle password visibility">
+              👁️
+            </button>
           </div>
-          
-          <!-- Dynamic Password Strength Checklist (Only shown during Sign Up) -->
-          <div class="password-criteria" id="passwordCriteria" style="display: none;">
-            <p>Password requirements:</p>
-            <div class="criterion invalid" id="ruleLength">Minimum 8 characters</div>
-            <div class="criterion invalid" id="ruleUpper">At least one uppercase letter</div>
-            <div class="criterion invalid" id="ruleLower">At least one lowercase letter</div>
-            <div class="criterion invalid" id="ruleNumber">At least one number</div>
-          </div>
+          <div class="validation-message" id="passwordValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
         </div>
 
         <!-- Submit -->

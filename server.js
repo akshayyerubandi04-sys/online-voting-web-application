@@ -24,34 +24,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 // -------------------------------------------------------------
 
 /**
- * Normalizes and hashes the Identity Number (e.g. Aadhaar) to protect privacy.
+ * Normalizes and hashes the Identity Number (Voter ID) to protect privacy.
  * Uses HMAC-SHA-256 with a server secret to prevent rainbow table attacks.
  */
 function hashIdentity(identityNumber) {
-  const normalized = identityNumber.replace(/[\s-]/g, '').trim();
+  const normalized = identityNumber.trim();
   return crypto.createHmac('sha256', IDENTITY_SECRET).update(normalized).digest('hex');
 }
 
 /**
  * Normalizes and masks the Identity Number so it can be safely displayed in the UI.
- * E.g., "123456789012" -> "XXXX-XXXX-9012"
+ * E.g., "VOTER1234" -> "XXXXX1234"
  */
 function maskIdentity(identityNumber) {
-  const normalized = identityNumber.replace(/[\s-]/g, '').trim();
-  if (normalized.length < 4) {
-    return 'X'.repeat(normalized.length);
+  const normalized = identityNumber.trim();
+  if (normalized.length <= 4) {
+    return normalized;
   }
   const lastFour = normalized.slice(-4);
-  const prefixLength = normalized.length - 4;
-  
-  let maskedPrefix = '';
-  for (let i = 0; i < prefixLength; i++) {
-    maskedPrefix += 'X';
-    if ((i + 1) % 4 === 0 && i !== prefixLength - 1) {
-      maskedPrefix += '-';
-    }
-  }
-  return maskedPrefix ? `${maskedPrefix}-${lastFour}` : lastFour;
+  return 'X'.repeat(normalized.length - 4) + lastFour;
 }
 
 /**
@@ -112,26 +103,28 @@ function requireAuth(req, res, next) {
  * Onboarding: Sign Up route
  */
 app.post('/api/auth/register', async (req, res) => {
-  const { identityNumber, password } = req.body;
+  const { identityNumber, password, email } = req.body;
 
   // Server-side validation
-  if (!identityNumber || !password) {
-    return res.status(400).json({ error: 'Identity number and password are required.' });
+  if (!identityNumber) {
+    return res.status(400).json({ error: 'User Name is required.' });
+  }
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required.' });
+  }
+  if (!password) {
+    return res.status(400).json({ error: 'Password is required.' });
   }
 
-  // Identity field format checking (Expect exactly 12 digits, support space/dash styling)
-  const normalizedIdentity = identityNumber.replace(/[\s-]/g, '').trim();
-  const identityRegex = /^\d{12}$/;
-  if (!identityRegex.test(normalizedIdentity)) {
-    return res.status(400).json({ error: 'Invalid Identity Format. Must be a 12-digit number (Aadhaar format).' });
+  const normalizedIdentity = identityNumber.trim();
+  if (normalizedIdentity.length === 0) {
+    return res.status(400).json({ error: 'User Name cannot be empty.' });
   }
 
-  // Password strength check (Min 8 chars, 1 uppercase, 1 lowercase, 1 digit)
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-  if (!passwordRegex.test(password)) {
-    return res.status(400).json({ 
-      error: 'Password too weak. Must be at least 8 characters long, contain an uppercase letter, a lowercase letter, and a number.' 
-    });
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(normalizedEmail)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
 
   const identityHash = hashIdentity(normalizedIdentity);
@@ -141,8 +134,8 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     // Attempt database insert
     const result = await db.run(
-      `INSERT INTO users (identity_hash, identity_masked, password_hash) VALUES (?, ?, ?)`,
-      [identityHash, identityMasked, passwordHash]
+      `INSERT INTO users (identity_hash, identity_masked, password_hash, email) VALUES (?, ?, ?, ?)`,
+      [identityHash, identityMasked, passwordHash, normalizedEmail]
     );
 
     // Auto-login on successful registration
@@ -156,8 +149,11 @@ app.post('/api/auth/register', async (req, res) => {
 
     return res.status(201).json({ success: true, message: 'Registration and onboarding successful.' });
   } catch (err) {
-    if (err.message.includes('UNIQUE constraint failed')) {
-      return res.status(400).json({ error: 'This Identity Number is already registered.' });
+    if (err.message.includes('users.identity_hash')) {
+      return res.status(400).json({ error: 'This User Name is already registered.' });
+    }
+    if (err.message.includes('users.email')) {
+      return res.status(400).json({ error: 'This email address is already in use.' });
     }
     console.error('Registration Error:', err);
     return res.status(500).json({ error: 'An internal server error occurred.' });
@@ -171,10 +167,10 @@ app.post('/api/auth/login', async (req, res) => {
   const { identityNumber, password } = req.body;
 
   if (!identityNumber || !password) {
-    return res.status(400).json({ error: 'Identity number and password are required.' });
+    return res.status(400).json({ error: 'User Name and password are required.' });
   }
 
-  const normalizedIdentity = identityNumber.replace(/[\s-]/g, '').trim();
+  const normalizedIdentity = identityNumber.trim();
   const identityHash = hashIdentity(normalizedIdentity);
 
   try {
@@ -214,7 +210,7 @@ app.post('/api/auth/logout', (req, res) => {
  */
 app.get('/api/user/status', requireAuth, async (req, res) => {
   try {
-    const user = await db.get(`SELECT id, identity_masked FROM users WHERE id = ?`, [req.userId]);
+    const user = await db.get(`SELECT id, identity_masked, email FROM users WHERE id = ?`, [req.userId]);
     if (!user) {
       res.clearCookie('session');
       return res.status(401).json({ error: 'User does not exist.' });
@@ -222,19 +218,22 @@ app.get('/api/user/status', requireAuth, async (req, res) => {
 
     const voter = await db.get(`SELECT * FROM voters WHERE user_id = ?`, [req.userId]);
     const candidate = await db.get(`SELECT * FROM candidates WHERE user_id = ?`, [req.userId]);
+    const vote = await db.get(`SELECT * FROM votes WHERE voter_user_id = ?`, [req.userId]);
 
     return res.json({
       loggedIn: true,
       user: {
         id: user.id,
-        identityMasked: user.identity_masked
+        identityMasked: user.identity_masked,
+        email: user.email || ''
       },
       voter: voter ? {
         fullName: voter.full_name,
         dob: voter.dob,
         constituency: voter.constituency,
         status: voter.status,
-        registeredAt: voter.registered_at
+        registeredAt: voter.registered_at,
+        hasVoted: !!vote
       } : null,
       candidate: candidate ? {
         candidateName: candidate.candidate_name,
@@ -242,7 +241,11 @@ app.get('/api/user/status', requireAuth, async (req, res) => {
         constituency: candidate.constituency,
         manifesto: candidate.manifesto,
         status: candidate.status,
-        submittedAt: candidate.submitted_at
+        submittedAt: candidate.submitted_at,
+        age: candidate.age,
+        qualification: candidate.qualification,
+        photoUrl: candidate.photo_url,
+        role: candidate.role
       } : null
     });
   } catch (err) {
@@ -296,10 +299,20 @@ app.post('/api/voter/register', requireAuth, async (req, res) => {
  * Option B: Register as a Voting Candidate
  */
 app.post('/api/candidate/register', requireAuth, async (req, res) => {
-  const { candidateName, partyAffiliation, constituency, manifesto } = req.body;
+  const { candidateName, partyAffiliation, constituency, manifesto, age, qualification, photoUrl, role } = req.body;
 
-  if (!candidateName || !partyAffiliation || !constituency || !manifesto) {
-    return res.status(400).json({ error: 'All candidate fields are required.' });
+  if (!candidateName || !partyAffiliation || !constituency || !manifesto || !age || !qualification || !role) {
+    return res.status(400).json({ error: 'All fields (Display Name, Party, Age, Qualification, Manifesto, and Target Office) are required.' });
+  }
+
+  const parsedAge = Number(age);
+  if (isNaN(parsedAge) || parsedAge < 25) {
+    return res.status(400).json({ error: 'Candidate must be at least 25 years old.' });
+  }
+
+  const normalizedRole = role.trim().toUpperCase();
+  if (normalizedRole !== 'MLA' && normalizedRole !== 'MP') {
+    return res.status(400).json({ error: 'Candidate target office role must be MLA or MP.' });
   }
 
   try {
@@ -315,16 +328,92 @@ app.post('/api/candidate/register', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'You have already submitted a candidacy application.' });
     }
 
-    // Submit candidacy (status defaults to 'PENDING' for evaluation workflow)
+    // Submit candidacy (status is APPROVED for college demo simulation simplicity)
     await db.run(
-      `INSERT INTO candidates (user_id, candidate_name, party_affiliation, constituency, manifesto, status) VALUES (?, ?, ?, ?, ?, 'PENDING')`,
-      [req.userId, candidateName.trim(), partyAffiliation.trim(), constituency.trim(), manifesto.trim()]
+      `INSERT INTO candidates (user_id, candidate_name, party_affiliation, constituency, manifesto, status, age, qualification, photo_url, role) VALUES (?, ?, ?, ?, ?, 'APPROVED', ?, ?, ?, ?)`,
+      [req.userId, candidateName.trim(), partyAffiliation.trim(), constituency.trim(), manifesto.trim(), parsedAge, qualification.trim(), (photoUrl || '').trim(), normalizedRole]
     );
 
-    return res.status(201).json({ success: true, message: 'Candidacy application filed successfully and is currently under review.' });
+    return res.status(201).json({ success: true, message: 'Candidacy application filed successfully and auto-approved for election.' });
   } catch (err) {
     console.error('Candidate Registration Error:', err);
     return res.status(500).json({ error: 'Failed to file candidate application.' });
+  }
+});
+
+/**
+ * Retrieve candidates in the user's constituency for voting
+ */
+app.get('/api/candidates/list', requireAuth, async (req, res) => {
+  try {
+    // 1. Get the voter record for current user
+    const voter = await db.get(`SELECT * FROM voters WHERE user_id = ?`, [req.userId]);
+    if (!voter || voter.status !== 'APPROVED') {
+      return res.status(400).json({ error: 'You must be an approved voter to access the candidates list.' });
+    }
+
+    // 2. Fetch candidates in the voter's constituency
+    const candidates = await db.all(`SELECT * FROM candidates WHERE constituency = ? AND status = 'APPROVED'`, [voter.constituency]);
+
+    // 3. Check if current user has already voted
+    const vote = await db.get(`SELECT * FROM votes WHERE voter_user_id = ?`, [req.userId]);
+
+    return res.json({
+      candidates: candidates.map(c => ({
+        id: c.id,
+        candidateName: c.candidate_name,
+        partyAffiliation: c.party_affiliation,
+        manifesto: c.manifesto,
+        age: c.age,
+        qualification: c.qualification,
+        photoUrl: c.photo_url,
+        role: c.role
+      })),
+      hasVoted: !!vote
+    });
+  } catch (err) {
+    console.error('List Candidates Error:', err);
+    return res.status(500).json({ error: 'Failed to retrieve candidates list.' });
+  }
+});
+
+/**
+ * Cast a vote for a candidate
+ */
+app.post('/api/vote/cast', requireAuth, async (req, res) => {
+  const { candidateId } = req.body;
+
+  if (!candidateId) {
+    return res.status(400).json({ error: 'Candidate ID is required.' });
+  }
+
+  try {
+    // 1. Check if voter is approved
+    const voter = await db.get(`SELECT * FROM voters WHERE user_id = ?`, [req.userId]);
+    if (!voter || voter.status !== 'APPROVED') {
+      return res.status(400).json({ error: 'Only approved registered voters can cast a vote.' });
+    }
+
+    // 2. Check if user has already voted
+    const existingVote = await db.get(`SELECT * FROM votes WHERE voter_user_id = ?`, [req.userId]);
+    if (existingVote) {
+      return res.status(400).json({ error: 'You have already cast your vote. Multiple voting is strictly prohibited.' });
+    }
+
+    // 3. Verify candidate exists in the voter's constituency
+    const candidates = await db.all(`SELECT * FROM candidates WHERE constituency = ? AND status = 'APPROVED'`, [voter.constituency]);
+    const candidate = candidates.find(c => c.id === Number(candidateId));
+    if (!candidate) {
+      return res.status(400).json({ error: 'Selected candidate is invalid or belongs to another constituency.' });
+    }
+
+    // 4. Save the vote
+    await db.run(`INSERT INTO votes (voter_user_id, candidate_id) VALUES (?, ?)`, [req.userId, candidateId]);
+
+    return res.status(201).json({ success: true, message: 'Vote Submitted Successfully' });
+  } catch (err) {
+    console.error('Vote Casting Error:', err);
+    return res.status(500).json({ error: 'Failed to submit vote due to a database issue.' });
   }
 });
 

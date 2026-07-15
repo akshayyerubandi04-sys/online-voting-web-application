@@ -31,13 +31,23 @@
     <!-- Welcome Panel -->
     <section class="welcome-section">
       <div>
-        <h1 class="welcome-title">Voting Portal</h1>
+        <h1 class="welcome-title" id="welcomeTitle">Voting Portal</h1>
         <p style="color: var(--text-secondary);">Manage your national voter status and candidate representation settings.</p>
+        
+        <!-- Registration & Voting Status Badges -->
+        <div id="voterStatusHeaderSummary" style="display: none; margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.85rem;">
+          <span style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success); padding: 0.35rem 0.75rem; border-radius: 20px; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+            Registration: ✔ Registered
+          </span>
+          <span id="votingStatusHeaderBadge" style="padding: 0.35rem 0.75rem; border-radius: 20px; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+            Voting Status: Not Voted Yet
+          </span>
+        </div>
       </div>
       <div>
         <div class="id-badge">
           <span class="id-badge-dot"></span>
-          <span id="userMaskedId">ID: XXXX-XXXX-XXXX</span>
+          <span id="userMaskedId">User Name: guest</span>
         </div>
       </div>
     </section>
@@ -74,6 +84,14 @@
             <span class="details-value" id="voterValConstituency">-</span>
           </div>
           <div class="details-row">
+            <span class="details-label">Registration Status:</span>
+            <span class="details-value" style="color: var(--success); font-weight: bold;">✔ Registered</span>
+          </div>
+          <div class="details-row">
+            <span class="details-label">Voting Status:</span>
+            <span class="details-value" id="voterValVotingStatus" style="font-weight: bold;">Not Voted Yet</span>
+          </div>
+          <div class="details-row">
             <span class="details-label">Verified At:</span>
             <span class="details-value" id="voterValTime">-</span>
           </div>
@@ -101,6 +119,10 @@
             <span class="details-value" id="candidateValName">-</span>
           </div>
           <div class="details-row">
+            <span class="details-label">Running For:</span>
+            <span class="details-value" id="candidateValRole" style="font-weight: 700; color: var(--accent);">-</span>
+          </div>
+          <div class="details-row">
             <span class="details-label">Party Affiliation:</span>
             <span class="details-value" id="candidateValParty">-</span>
           </div>
@@ -115,6 +137,18 @@
         </div>
       </article>
 
+    </section>
+
+    <!-- Pathway C: Active Elections / Voting Booth -->
+    <section class="voting-booth-section" id="votingBoothSection" style="display: none; margin-top: 3rem; background: rgba(13, 17, 30, 0.4); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 2rem;">
+      <h2 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-heading);">🗳️ Active Election Ballot</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem;">Cast your vote for a candidate in your constituency. You can only submit one ballot.</p>
+      
+      <div id="votingBoothStatusBanner" class="status-banner" style="margin-bottom: 2rem;"></div>
+
+      <div class="candidates-ballot-grid" id="candidatesBallotGrid">
+        <!-- Candidate cards dynamically rendered here -->
+      </div>
     </section>
 
   </main>
@@ -134,13 +168,14 @@
         
         <div class="status-banner error" id="voterModalStatusBanner"></div>
 
-        <form id="voterForm">
+        <form id="voterForm" novalidate>
           <div class="form-group">
             <label class="form-label" for="voterFullName">Legal Full Name</label>
             <div class="input-wrapper">
               <span class="input-icon">👤</span>
               <input type="text" id="voterFullName" class="form-input" placeholder="John Doe" required style="padding-left: 2.75rem;">
             </div>
+            <div class="validation-message" id="voterNameValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
           </div>
 
           <div class="form-two-col">
@@ -150,6 +185,7 @@
                 <span class="input-icon">📅</span>
                 <input type="date" id="voterDob" class="form-input" required style="padding-left: 2.75rem;">
               </div>
+              <div class="validation-message" id="voterDobValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             <div class="form-group">
               <label class="form-label" for="voterConstituency">Electoral Constituency</label>
@@ -157,6 +193,7 @@
                 <span class="input-icon">📍</span>
                 <input type="text" id="voterConstituency" class="form-input" placeholder="District 12" required style="padding-left: 2.75rem;">
               </div>
+              <div class="validation-message" id="voterConstValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
             </div>
           </div>
           
@@ -182,13 +219,14 @@
 
         <div class="status-banner error" id="candidateModalStatusBanner"></div>
 
-        <form id="candidateForm">
+        <form id="candidateForm" novalidate>
           <div class="form-group">
             <label class="form-label" for="candidateName">Ballot Display Name</label>
             <div class="input-wrapper">
               <span class="input-icon">👤</span>
               <input type="text" id="candidateName" class="form-input" placeholder="Representative Name" required style="padding-left: 2.75rem;">
             </div>
+            <div class="validation-message" id="candidateNameValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
           </div>
 
           <div class="form-two-col">
@@ -198,6 +236,7 @@
                 <span class="input-icon">🏛️</span>
                 <input type="text" id="partyAffiliation" class="form-input" placeholder="Independent / Democratic" required style="padding-left: 2.75rem;">
               </div>
+              <div class="validation-message" id="candidatePartyValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
             </div>
             <div class="form-group">
               <label class="form-label" for="candidateConstituency">Constituency</label>
@@ -209,13 +248,54 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="candidateManifesto">Campaign Manifesto</label>
-            <textarea id="candidateManifesto" class="form-input" placeholder="Describe your key campaign policies and vision..." required style="height: 100px; resize: vertical; padding-left: 1rem;"></textarea>
+          <div class="form-two-col">
+            <div class="form-group">
+              <label class="form-label" for="candidateAge">Candidate Age</label>
+              <div class="input-wrapper">
+                <span class="input-icon">📅</span>
+                <input type="number" id="candidateAge" class="form-input" placeholder="Min age 25" required style="padding-left: 2.75rem;">
+              </div>
+              <div class="validation-message" id="candidateAgeValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="candidateRole">Running For Office</label>
+              <div class="input-wrapper">
+                <span class="input-icon">💼</span>
+                <select id="candidateRole" class="form-input" style="padding-left: 2.75rem; background: rgba(0, 0, 0, 0.4); color: var(--text-primary); border: 1px solid var(--border-color); width: 100%; border-radius: var(--border-radius-sm); outline: none; height: 100%;">
+                  <option value="MLA" selected>Member of Legislative Assembly (MLA)</option>
+                  <option value="MP">Member of Parliament (MP)</option>
+                </select>
+              </div>
+              <div class="validation-message" id="candidateRoleValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
+            </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="candidateDocs">Verification Documentation</label>
+            <label class="form-label" for="candidateQualification">Educational Qualification</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🎓</span>
+              <input type="text" id="candidateQualification" class="form-input" placeholder="Bachelor of Arts / MBA" required style="padding-left: 2.75rem;">
+            </div>
+            <div class="validation-message" id="candidateQualValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="candidatePhotoUrl">Photo URL (Optional)</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🖼️</span>
+              <input type="url" id="candidatePhotoUrl" class="form-input" placeholder="https://example.com/photo.jpg" style="padding-left: 2.75rem;">
+            </div>
+            <div class="validation-message" id="candidatePhotoValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="candidateManifesto">Campaign Manifesto</label>
+            <textarea id="candidateManifesto" class="form-input" placeholder="Describe your key campaign policies and vision..." required style="height: 100px; resize: vertical; padding-left: 1rem;"></textarea>
+            <div class="validation-message" id="candidateManifestoValidationMsg" style="color: var(--error); font-size: 0.75rem; margin-top: 0.25rem; display: none;"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="candidateDocs">Verification Documentation (Optional)</label>
             <div class="input-wrapper">
               <span class="input-icon">📄</span>
               <input type="file" id="candidateDocs" class="form-input" style="padding-left: 2.75rem;">
@@ -226,6 +306,26 @@
           <button type="submit" class="btn-primary">File Candidacy Declaration</button>
         </form>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal C: Vote Confirmation -->
+  <div class="modal-overlay" id="voteConfirmModal" role="dialog" aria-modal="true" aria-labelledby="voteConfirmTitle">
+    <div class="modal-card" style="max-width: 420px; border-radius: var(--border-radius-md);">
+      <div class="modal-header">
+        <h3 class="modal-title" id="voteConfirmTitle">Confirm Your Ballot</h3>
+        <button class="modal-close-btn" id="voteConfirmCloseBtn">&times;</button>
+      </div>
+      <div class="modal-body" id="voteConfirmModalBody" style="text-align: center; padding: 2rem 1.5rem;">
+        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 1.05rem;">Are you sure you want to vote for:</p>
+        <h2 id="confirmCandidateName" style="color: var(--text-primary); margin-bottom: 0.5rem; font-size: 1.6rem; font-family: var(--font-heading);">Candidate Name</h2>
+        <p id="confirmCandidateParty" style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 0.95rem; margin-bottom: 2rem; letter-spacing: 0.05em;">Party Name</p>
+        
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem;">
+          <button class="btn-secondary" id="btnCancelVote" style="flex: 1; padding: 0.85rem; border-radius: var(--border-radius-sm);">Cancel</button>
+          <button class="btn-primary" id="btnConfirmVote" style="flex: 1; padding: 0.85rem; border-radius: var(--border-radius-sm); margin-top: 0;">Confirm Vote</button>
+        </div>
       </div>
     </div>
   </div>

@@ -132,31 +132,35 @@ async function runTests() {
 
   try {
     // -------------------------------------------------------------
-    // Test Case 1: Sign up verification with invalid identity (10 digits instead of 12)
+    // -------------------------------------------------------------
+    // Test Case 1: Sign up verification with missing identity
     // -------------------------------------------------------------
     const res1 = await makeRequest('/api/auth/register', 'POST', {
-      identityNumber: '1234567890',
-      password: 'StrongPassword123'
+      identityNumber: '',
+      password: 'StrongPassword123',
+      email: 'test@example.com'
     });
-    assert(res1.status === 400, 'Rejects registration with short Identity Number (10 digits)');
-    assert(res1.data.error.includes('12-digit number'), 'Returns helpful format error message');
+    assert(res1.status === 400, 'Rejects registration with empty User Name');
+    assert(res1.data.error.toLowerCase().includes('user name'), 'Returns helpful format error message');
 
     // -------------------------------------------------------------
-    // Test Case 2: Sign up verification with weak password (missing numbers/uppercase)
+    // Test Case 2: Sign up verification with missing password
     // -------------------------------------------------------------
     const res2 = await makeRequest('/api/auth/register', 'POST', {
-      identityNumber: '111122223333',
-      password: 'weak'
+      identityNumber: 'VOTER123',
+      password: '',
+      email: 'test@example.com'
     });
-    assert(res2.status === 400, 'Rejects registration with weak password');
-    assert(res2.data.error.includes('Password too weak'), 'Returns password rules error message');
+    assert(res2.status === 400, 'Rejects registration with empty password');
+    assert(res2.data.error.toLowerCase().includes('password'), 'Returns password rules error message');
 
     // -------------------------------------------------------------
     // Test Case 3: Valid Sign up & Auto-Login cookie verify
     // -------------------------------------------------------------
     const res3 = await makeRequest('/api/auth/register', 'POST', {
-      identityNumber: '1111 2222 3333',
-      password: 'SecurePassword1'
+      identityNumber: 'VOTER123',
+      password: '123',
+      email: 'voter123@example.com'
     });
     assert(res3.status === 201, 'Accepts valid registration format and hashes input');
     savedCookie = getCookieHeader(res3.headers);
@@ -166,11 +170,23 @@ async function runTests() {
     // Test Case 4: Duplicate registration conflict error
     // -------------------------------------------------------------
     const res4 = await makeRequest('/api/auth/register', 'POST', {
-      identityNumber: '1111-2222-3333', // formatted differently but normalizes to same
-      password: 'SecurePassword2'
+      identityNumber: 'VOTER123',
+      password: '456',
+      email: 'another@example.com'
     });
     assert(res4.status === 400, 'Enforces database constraint preventing duplicate registration of the same Identity');
     assert(res4.data.error.includes('already registered'), 'Returns correct message for duplicate identity');
+
+    // -------------------------------------------------------------
+    // Test Case 4b: Duplicate email registration conflict error
+    // -------------------------------------------------------------
+    const res4b = await makeRequest('/api/auth/register', 'POST', {
+      identityNumber: 'VOTER456',
+      password: '456',
+      email: 'voter123@example.com'
+    });
+    assert(res4b.status === 400, 'Enforces database constraint preventing duplicate registration of the same Email');
+    assert(res4b.data.error.includes('email address is already in use'), 'Returns correct message for duplicate email');
 
     // -------------------------------------------------------------
     // Test Case 5: Route guard blocks anonymous dashboard status fetches
@@ -182,8 +198,8 @@ async function runTests() {
     // Test Case 6: Login using registered credentials
     // -------------------------------------------------------------
     const res6 = await makeRequest('/api/auth/login', 'POST', {
-      identityNumber: '111122223333',
-      password: 'SecurePassword1'
+      identityNumber: 'VOTER123',
+      password: '123'
     });
     assert(res6.status === 200, 'Successfully authenticates user with correct credentials');
     const newCookie = getCookieHeader(res6.headers);
@@ -194,7 +210,7 @@ async function runTests() {
     // -------------------------------------------------------------
     const res7 = await makeRequest('/api/user/status', 'GET', null, newCookie);
     assert(res7.status === 200, 'Allows dashboard status fetch for authenticated session');
-    assert(res7.data.user.identityMasked === 'XXXX-XXXX-3333', 'Returns masked Identity representation to protect user privacy');
+    assert(res7.data.user.identityMasked === 'XXXXR123', 'Returns masked Identity representation to protect user privacy');
     assert(res7.data.voter === null, 'Identifies user has not yet registered as a voter');
     assert(res7.data.candidate === null, 'Identifies user is not registered as a candidate');
 
@@ -205,7 +221,10 @@ async function runTests() {
       candidateName: 'John Citizen',
       partyAffiliation: 'Independent Party',
       constituency: 'Electoral Zone A',
-      manifesto: 'This is my test campaign promise text.'
+      manifesto: 'This is my test campaign promise text.',
+      age: 35,
+      qualification: 'B.Sc. Computer Science',
+      role: 'MLA'
     }, newCookie);
     assert(res8.status === 400, 'Candidacy endpoint rejects application if not a registered voter');
     assert(res8.data.error.includes('voter first'), 'Rejection reasons inform about voter check prerequisite');
@@ -238,7 +257,11 @@ async function runTests() {
       candidateName: 'John Doe Sr.',
       partyAffiliation: 'Green Alliance',
       constituency: 'Electoral Zone A',
-      manifesto: 'We build sustainable infrastructures and improve local parks.'
+      manifesto: 'We build sustainable infrastructures and improve local parks.',
+      age: 42,
+      qualification: 'PhD in Political Science',
+      photoUrl: 'https://example.com/photo.jpg',
+      role: 'MLA'
     }, newCookie);
     assert(res11.status === 201, 'Successfully files candidate application');
 
@@ -248,8 +271,44 @@ async function runTests() {
     const res12 = await makeRequest('/api/user/status', 'GET', null, newCookie);
     assert(res12.status === 200, 'Fetches current state updates');
     assert(res12.data.voter.status === 'APPROVED', 'Voter status returned is APPROVED');
-    assert(res12.data.candidate.status === 'PENDING', 'Candidacy status is PENDING review');
+    assert(res12.data.candidate.status === 'APPROVED', 'Candidacy status is APPROVED');
     assert(res12.data.candidate.partyAffiliation === 'Green Alliance', 'Returns core candidate details correctly');
+    assert(res12.data.candidate.age === 42, 'Returns candidate age correctly');
+    assert(res12.data.candidate.qualification === 'PhD in Political Science', 'Returns candidate qualification correctly');
+    assert(res12.data.candidate.role === 'MLA', 'Returns candidate office correctly');
+
+    // -------------------------------------------------------------
+    // Test Case 13: Retrieve active candidates list in constituency
+    // -------------------------------------------------------------
+    const res13 = await makeRequest('/api/candidates/list', 'GET', null, newCookie);
+    assert(res13.status === 200, 'Successfully retrieves candidates list');
+    assert(res13.data.candidates.length === 1, 'Contains exactly 1 candidate for constituency');
+    assert(res13.data.candidates[0].role === 'MLA', 'Candidate list item returns role correctly');
+    const cId = res13.data.candidates[0].id;
+
+    // -------------------------------------------------------------
+    // Test Case 14: Submit vote
+    // -------------------------------------------------------------
+    const res14 = await makeRequest('/api/vote/cast', 'POST', {
+      candidateId: cId
+    }, newCookie);
+    assert(res14.status === 201, 'Vote submitted successfully');
+    assert(res14.data.message === 'Vote Submitted Successfully', 'Success message matches specifications');
+
+    // -------------------------------------------------------------
+    // Test Case 15: Multiple voting is blocked
+    // -------------------------------------------------------------
+    const res15 = await makeRequest('/api/vote/cast', 'POST', {
+      candidateId: cId
+    }, newCookie);
+    assert(res15.status === 400, 'Blocks duplicate vote attempt');
+    assert(res15.data.error.includes('already cast'), 'Return message explains double voting prohibition');
+
+    // -------------------------------------------------------------
+    // Test Case 16: Verify dashboard status has updated hasVoted state
+    // -------------------------------------------------------------
+    const res16 = await makeRequest('/api/user/status', 'GET', null, newCookie);
+    assert(res16.data.voter.hasVoted === true, 'Voter status correctly reflects hasVoted as true');
 
     console.log('\n🌟 ALL INTEGRATION TESTS COMPLETED SUCCESSFULLY! Foundational security parameters are verified.');
     cleanupAndExit(0);
