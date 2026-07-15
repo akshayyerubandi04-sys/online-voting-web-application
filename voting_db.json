@@ -7,6 +7,14 @@
       "password_hash": "a222165c4069a7d23c7b9df51120b06b:073d84d468f4b36e53b79a0337a82f5972b5b5f6291e08843d4f4cfa2ab659733f0ba60b8520cae2ba55215aa96c91ccd29c240c1a366cde4aefcef4f516ad98",
       "email": "voter123@example.com",
       "created_at": "2026-07-15T12:04:55.986Z"
+    },
+    {
+      "id": 2,
+      "identity_hash": "f0e00cce3d782c1cbd1d3e183d4b376334b12e1783cf33f0955f110e4a483687",
+      "identity_masked": "XXXXXy123",
+      "password_hash": "d25e7bc3b15bd818d946313eab64910c:c0edbe3b0e9177879995d1c6775f72303e23f116fd13203739cec7d95614c0b744cb106bc84f2fc7e65233ea7f52ae8ccece9c429fbcffdad339296c4cfc98e6",
+      "email": "akshay@123",
+      "created_at": "2026-07-15T12:05:47.843Z"
     }
   ],
   "voters": [
