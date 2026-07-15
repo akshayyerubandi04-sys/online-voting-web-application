@@ -338,9 +338,13 @@ app.get('/dashboard', (req, res) => {
 });
 
 // Start Express Server
-app.listen(PORT, () => {
-  console.log(`=================================================`);
-  console.log(`Secure Voting Application Server started!`);
-  console.log(`Local Access URL: http://localhost:${PORT}`);
-  console.log(`=================================================`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`=================================================`);
+    console.log(`Secure Voting Application Server started!`);
+    console.log(`Local Access URL: http://localhost:${PORT}`);
+    console.log(`=================================================`);
+  });
+}
+
+module.exports = app;

@@ -2,7 +2,8 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'voting.db');
+const isVercel = process.env.VERCEL || process.env.NOW_BUILDER;
+const DB_PATH = isVercel ? path.join('/tmp', 'voting.db') : path.join(__dirname, 'voting.db');
 
 // Connect to SQLite Database
 const db = new sqlite3.Database(DB_PATH, (err) => {
