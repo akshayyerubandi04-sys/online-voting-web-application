@@ -148,12 +148,6 @@ function initAuthPage() {
       if (!email) {
         setInvalid('emailInput', 'emailValidationMsg', 'Email address is required.');
         hasError = true;
-      } else {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          setInvalid('emailInput', 'emailValidationMsg', 'Please enter a valid email address.');
-          hasError = true;
-        }
       }
     }
 

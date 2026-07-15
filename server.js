@@ -122,10 +122,6 @@ app.post('/api/auth/register', async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(normalizedEmail)) {
-    return res.status(400).json({ error: 'Please enter a valid email address.' });
-  }
 
   const identityHash = hashIdentity(normalizedIdentity);
   const identityMasked = maskIdentity(normalizedIdentity);

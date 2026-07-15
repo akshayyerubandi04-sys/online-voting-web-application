@@ -4,17 +4,9 @@
       "id": 1,
       "identity_hash": "30c0fdff4895aa8930eaa025f6b6da8aff38da1ac3cb50534a67786a911b7adc",
       "identity_masked": "XXXXR123",
-      "password_hash": "c658f7a19f526af51f69a8aca0acb81c:1fd12ae47024d5c8baa3525ca486a0ba4869f1c7b53ef6c8eac453fb87e69cbce1d0b54cbaf77a4b6d7a5fe98bf595a41677c04464df4bdd7579e1e614262c85",
+      "password_hash": "a222165c4069a7d23c7b9df51120b06b:073d84d468f4b36e53b79a0337a82f5972b5b5f6291e08843d4f4cfa2ab659733f0ba60b8520cae2ba55215aa96c91ccd29c240c1a366cde4aefcef4f516ad98",
       "email": "voter123@example.com",
-      "created_at": "2026-07-15T11:44:37.738Z"
-    },
-    {
-      "id": 2,
-      "identity_hash": "f0e00cce3d782c1cbd1d3e183d4b376334b12e1783cf33f0955f110e4a483687",
-      "identity_masked": "XXXXXy123",
-      "password_hash": "2bd9f2d92dbfe3a447ead32b53f5362f:99380570b0fd0c7d198717ae65a2f3a410b91dfb55e65568f0b808190564f251903bce237bb5ee8b34451200494e343fd108bd9121e1143e0f6608a4eaf1d299",
-      "email": "akshay@gmial.com",
-      "created_at": "2026-07-15T11:45:59.208Z"
+      "created_at": "2026-07-15T12:04:55.986Z"
     }
   ],
   "voters": [
@@ -25,16 +17,7 @@
       "dob": "1990-05-15",
       "constituency": "Electoral Zone A",
       "status": "APPROVED",
-      "registered_at": "2026-07-15T11:44:38.061Z"
-    },
-    {
-      "id": 2,
-      "user_id": 2,
-      "full_name": "ayyappa",
-      "dob": "2004-09-09",
-      "constituency": "konaseema",
-      "status": "APPROVED",
-      "registered_at": "2026-07-15T11:49:50.226Z"
+      "registered_at": "2026-07-15T12:04:56.466Z"
     }
   ],
   "candidates": [
@@ -50,7 +33,7 @@
       "qualification": "PhD in Political Science",
       "photo_url": "https://example.com/photo.jpg",
       "role": "MLA",
-      "submitted_at": "2026-07-15T11:44:38.069Z"
+      "submitted_at": "2026-07-15T12:04:56.474Z"
     }
   ],
   "votes": [
@@ -58,7 +41,7 @@
       "id": 1,
       "voter_user_id": 1,
       "candidate_id": 1,
-      "created_at": "2026-07-15T11:44:38.089Z"
+      "created_at": "2026-07-15T12:04:56.500Z"
     }
   ]
 }
