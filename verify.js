@@ -19,6 +19,16 @@ if (fs.existsSync(dbFile)) {
   }
 }
 
+const jsonDbFile = path.join(__dirname, 'voting_db.json');
+if (fs.existsSync(jsonDbFile)) {
+  try {
+    fs.unlinkSync(jsonDbFile);
+    console.log('Removed old JSON database file for testing.');
+  } catch (err) {
+    console.warn('Could not clean JSON db file:', err.message);
+  }
+}
+
 // Global configurations
 const TEST_PORT = 3123;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
